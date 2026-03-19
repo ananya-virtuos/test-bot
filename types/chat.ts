@@ -9,6 +9,7 @@ export interface ChatMessage {
 export interface ChatRequest {
   user_uuid: string;
   msg: string;
+  shop_id?: string; // Optional shop ID for personalized responses
 }
 
 export interface ChatSuccessResponse {

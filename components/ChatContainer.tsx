@@ -7,28 +7,62 @@ import TypingIndicator from './TypingIndicator';
 import { ChatMessage as ChatMessageType } from '@/types/chat';
 import { sendChatMessage, ApiError } from '@/lib/api';
 import { getOrCreateUserId } from '@/lib/utils';
+import { 
+  fetchShopConfig, 
+  getShopId, 
+  ShopConfig, 
+  DEFAULT_CONFIG,
+  generateCSSVariables 
+} from '@/lib/shopConfig';
 
 export default function ChatContainer() {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState<string>('');
+  const [shopConfig, setShopConfig] = useState<ShopConfig>(DEFAULT_CONFIG);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
+  // Load shop configuration on mount
   useEffect(() => {
+    const initializeShopConfig = async () => {
+      try {
+        const shopId = getShopId();
+        const config = await fetchShopConfig(shopId);
+        setShopConfig(config);
+
+        // Apply CSS variables for theme colors
+        const root = document.documentElement;
+        root.style.cssText = generateCSSVariables(config);
+      } catch (error) {
+        console.error('Failed to initialize shop config:', error);
+        setShopConfig(DEFAULT_CONFIG);
+      } finally {
+        setIsLoadingConfig(false);
+      }
+    };
+
+    initializeShopConfig();
+  }, []);
+
+  // Initialize user ID and welcome message
+  useEffect(() => {
+    if (isLoadingConfig) return;
+
     // Initialize user ID
     const id = getOrCreateUserId();
     setUserId(id);
 
-    // Add welcome message
+    // Add welcome message from config
     const welcomeMessage: ChatMessageType = {
       id: 'welcome-' + Date.now(),
       role: 'assistant',
-      content: "👋 Hello! I'm your GiftCart assistant. How can I help you find the perfect gift today?",
+      content: shopConfig.welcomeMessage,
       timestamp: new Date(),
     };
     setMessages([welcomeMessage]);
-  }, []);
+  }, [isLoadingConfig, shopConfig.welcomeMessage]);
 
   useEffect(() => {
     // Scroll to bottom when new messages arrive
@@ -54,10 +88,11 @@ export default function ChatContainer() {
     setIsLoading(true);
 
     try {
-      // Call API
+      // Call API with shop ID for personalized responses
       const response = await sendChatMessage({
         user_uuid: userId,
         msg: content,
+        shop_id: shopConfig.shopId, // Include shop context
       });
 
       // Check if response contains an error
@@ -109,29 +144,73 @@ export default function ChatContainer() {
     const welcomeMessage: ChatMessageType = {
       id: 'welcome-' + Date.now(),
       role: 'assistant',
-      content: "Chat cleared! How can I help you find the perfect gift today?",
+      content: `Chat cleared! How can I help you today?`,
       timestamp: new Date(),
     };
     setMessages([welcomeMessage]);
   };
 
+  if (isLoadingConfig) {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-gradient-to-b from-gray-50 to-white">
+        <div className="text-center">
+          <div className="inline-block animate-spin">⏳</div>
+          <p className="mt-4 text-gray-600">Loading chatbot...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Dynamic header gradient based on brand color
+  const headerStyle = {
+    background: `linear-gradient(135deg, ${shopConfig.brandColor}, ${shopConfig.accentColor || shopConfig.brandColor})`,
+  };
+
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-gray-50 to-white">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-6 py-4 shadow-lg">
+    <div 
+      className="flex flex-col h-full bg-gradient-to-b from-gray-50 to-white"
+      style={{
+        '--chatbot-brand-color': shopConfig.brandColor,
+        '--chatbot-accent-color': shopConfig.accentColor || shopConfig.brandColor,
+        '--chatbot-text-color': shopConfig.textColor,
+      } as React.CSSProperties}
+    >
+      {/* Header with Dynamic Branding */}
+      <div className="text-white px-6 py-4 shadow-lg" style={headerStyle}>
         <div className="flex items-center justify-between max-w-4xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-2xl">
-              🎁
-            </div>
+            {shopConfig.logoUrl ? (
+              <img 
+                src={shopConfig.logoUrl} 
+                alt={shopConfig.assistantName}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center text-2xl"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
+              >
+                {shopConfig.triggerButtonEmoji}
+              </div>
+            )}
             <div>
-              <h1 className="text-xl font-bold">GiftCart Assistant</h1>
-              <p className="text-sm text-primary-100">Here to help you find perfect gifts</p>
+              <h1 className="text-xl font-bold">{shopConfig.assistantName}</h1>
+              <p className="text-sm opacity-90">Here to help you</p>
             </div>
           </div>
           <button
             onClick={handleClearChat}
-            className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium backdrop-blur-sm"
+            className="px-4 py-2 rounded-lg transition-colors text-sm font-medium backdrop-blur-sm"
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            }}
             aria-label="Clear chat"
           >
             Clear Chat
@@ -147,9 +226,14 @@ export default function ChatContainer() {
       >
         <div className="max-w-4xl mx-auto">
           {messages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
+            <ChatMessage 
+              key={message.id} 
+              message={message}
+              assistantName={shopConfig.assistantName}
+              brandColor={shopConfig.brandColor}
+            />
           ))}
-          {isLoading && <TypingIndicator />}
+          {isLoading && <TypingIndicator brandColor={shopConfig.brandColor} />}
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -160,7 +244,8 @@ export default function ChatContainer() {
           <ChatInput
             onSendMessage={handleSendMessage}
             disabled={isLoading}
-            placeholder="Ask me about gifts, products, or anything else..."
+            placeholder="Ask me anything..."
+            brandColor={shopConfig.brandColor}
           />
         </div>
       </div>

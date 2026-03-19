@@ -4,12 +4,14 @@ interface ChatInputProps {
   onSendMessage: (message: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  brandColor?: string;
 }
 
 export default function ChatInput({
   onSendMessage,
   disabled = false,
   placeholder = 'Type your message...',
+  brandColor = '#667eea',
 }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -64,18 +66,35 @@ export default function ChatInput({
             placeholder={disabled ? 'Waiting for response...' : placeholder}
             disabled={disabled}
             rows={1}
-            className={`w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
+            className={`w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
               disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-900'
             }`}
             style={{
               minHeight: '48px',
               maxHeight: '150px',
+              }}
+            onFocus={(e) => {
+              e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColor}40, inset 0 1px 3px 0 rgb(0 0 0 / 0.1)`;
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.boxShadow = '';
             }}
           />
           {message.trim() && !disabled && (
             <button
               type="submit"
-              className="absolute right-2 bottom-2 p-2 text-primary-600 hover:text-primary-700 transition-colors"
+              className="absolute right-2 bottom-2 p-2 transition-colors"
+              style={{ color: brandColor }}
+              onMouseEnter={(e) => {
+                const element = e.currentTarget as HTMLButtonElement;
+                const svg = element.querySelector('svg');
+                if (svg) svg.style.opacity = '0.7';
+              }}
+              onMouseLeave={(e) => {
+                const element = e.currentTarget as HTMLButtonElement;
+                const svg = element.querySelector('svg');
+                if (svg) svg.style.opacity = '1';
+              }}
               aria-label="Send message"
             >
               <svg
@@ -93,11 +112,27 @@ export default function ChatInput({
           <button
             type="button"
             disabled={disabled}
-            className={`px-6 py-3 rounded-2xl font-medium transition-all ${
-              disabled
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 shadow-md hover:shadow-lg'
-            }`}
+            className="px-6 py-3 rounded-2xl font-medium transition-all text-white"
+            style={{
+              background: disabled 
+                ? '#d1d5db' 
+                : `linear-gradient(135deg, ${brandColor}, ${brandColor}dd)`,
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              opacity: disabled ? 0.6 : 1,
+              boxShadow: disabled ? 'none' : `0 4px 6px -1px ${brandColor}40`,
+            }}
+            onMouseEnter={(e) => {
+              if (!disabled) {
+                e.currentTarget.style.boxShadow = `0 10px 15px -3px ${brandColor}40`;
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!disabled) {
+                e.currentTarget.style.boxShadow = `0 4px 6px -1px ${brandColor}40`;
+                e.currentTarget.style.transform = 'translateY(0)';
+              }
+            }}
           >
             Send
           </button>

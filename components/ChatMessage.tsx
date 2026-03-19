@@ -4,9 +4,15 @@ import { ChatMessage as ChatMessageType } from '@/types/chat';
 
 interface ChatMessageProps {
   message: ChatMessageType;
+  brandColor?: string;
+  assistantName?: string;
 }
 
-export default function ChatMessage({ message }: ChatMessageProps) {
+export default function ChatMessage({ 
+  message,
+  brandColor = '#667eea',
+  assistantName = 'Assistant'
+}: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isError = message.error;
 
@@ -20,10 +26,11 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         {/* Avatar */}
         <div
           className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold ${
-            isUser
-              ? 'bg-gradient-to-br from-primary-500 to-primary-600 ml-2'
-              : 'bg-gradient-to-br from-gray-600 to-gray-700 mr-2'
+            isUser ? 'ml-2' : 'mr-2'
           }`}
+          style={isUser ? {
+            background: `linear-gradient(135deg, ${brandColor}, ${brandColor}dd)`,
+          } : {}}
         >
           {isUser ? '👤' : '🤖'}
         </div>
@@ -32,11 +39,14 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         <div
           className={`px-4 py-3 rounded-2xl shadow-sm ${
             isUser
-              ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-tr-sm'
+              ? 'text-white rounded-tr-sm'
               : isError
               ? 'bg-red-50 text-red-900 border border-red-200 rounded-tl-sm'
               : 'bg-white text-gray-800 border border-gray-200 rounded-tl-sm'
           }`}
+          style={isUser ? {
+            background: `linear-gradient(135deg, ${brandColor}, ${brandColor}dd)`,
+          } : {}}
         >
           {isError && (
             <div className="flex items-center gap-2 mb-1">
@@ -64,7 +74,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           </div>
           <div
             className={`text-xs mt-1 ${
-              isUser ? 'text-primary-100' : isError ? 'text-red-500' : 'text-gray-400'
+              isUser ? 'text-white/70' : isError ? 'text-red-500' : 'text-gray-400'
             }`}
           >
             {message.timestamp.toLocaleTimeString('en-US', {
