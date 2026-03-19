@@ -1,7 +1,5 @@
-import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = {
-  icons: {
-    icon: '/favicon.svg',
-  },
-};
+export default function Icon() {
+  redirect('/favicon.svg');
+}
