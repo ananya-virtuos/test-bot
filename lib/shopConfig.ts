@@ -37,7 +37,7 @@ export const DEFAULT_CONFIG: ShopConfig = {
 export async function fetchShopConfig(shopId: string): Promise<ShopConfig> {
   try {
     const response = await fetch(
-      `https://largely-spirits-earned-chat.trycloudflare.com/api/v1/shop-config?shopId=${shopId}`,
+      `https://brands-monte-nice-root.trycloudflare.com/api/v1/shop-config?shopId=${shopId}`,
       {
         headers: {
           'Content-Type': 'application/json',
